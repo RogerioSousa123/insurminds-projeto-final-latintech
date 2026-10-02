@@ -1,0 +1,2 @@
+"""Adaptadores de modelos conversacionais."""
+

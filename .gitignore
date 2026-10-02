@@ -1,0 +1,14 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.streamlit/secrets.toml
+data/*.db
+data/*.db-*
+data/uploads/
+*.log
+.DS_Store
+Thumbs.db
+
