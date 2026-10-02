@@ -83,6 +83,8 @@ cp .env.example .env
 ```dotenv
 LLM_PROVIDER=anthropic
 ANTHROPIC_API_KEY=sua_chave
+# Preencha se a API informar que a chave não está vinculada a um workspace:
+ANTHROPIC_WORKSPACE_ID=wrk_...
 ANTHROPIC_MODEL=modelo_disponivel_na_sua_conta
 ```
 
@@ -116,7 +118,7 @@ Ou diretamente:
 .\.venv\Scripts\python.exe -m streamlit run app.py
 ```
 
-Depois, abra `http://localhost:8501`.
+Depois, abra `http://localhost:8505`. Em produção, o Caddy publica a aplicação em `https://latintech.latin-re.com`.
 
 Fluxo recomendado:
 
@@ -124,6 +126,25 @@ Fluxo recomendado:
 2. confira campos, avisos e evidências em **Apólices**;
 3. selecione os documentos em **Comparar**;
 4. exporte o relatório e teste perguntas no **Copiloto**.
+
+## Execução persistente e domínio
+
+O arquivo `ecosystem.config.cjs` mantém a aplicação em `127.0.0.1:8505` pelo PM2:
+
+```powershell
+pm2 start ecosystem.config.cjs
+pm2 save
+```
+
+O Caddyfile versionado em `deployment/Caddyfile` publica a aplicação em `https://latintech.latin-re.com`. O DNS precisa ter um registro `A` chamado `latintech` apontando para o mesmo servidor do domínio principal. Após alterar o Caddyfile ativo, valide e recarregue o Caddy antes da demonstração.
+
+Comandos úteis:
+
+```powershell
+pm2 show insurminds
+pm2 logs insurminds --lines 100 --nostream
+Invoke-WebRequest http://127.0.0.1:8505/_stcore/health -UseBasicParsing
+```
 
 ## Testes
 
@@ -196,4 +217,3 @@ Para o MVP acadêmico, documentos enviados ao provedor de IA devem ser públicos
 ## Licença
 
 Distribuído sob a [Licença MIT](LICENSE).
-

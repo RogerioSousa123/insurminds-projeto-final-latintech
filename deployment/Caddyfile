@@ -1,0 +1,86 @@
+# Snippet com permissões condicionalmente baseadas no Origin
+(permissao_iframe_e_cors) {
+	header Content-Security-Policy "frame-ancestors 'self' https://latinre.mybeehome.com https://latin-re.com;"
+	header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+	header Access-Control-Allow-Headers "*"
+
+	@origemLatin header Origin https://latinre.mybeehome.com
+	@origemSite header Origin https://latin-re.com
+
+	handle @origemLatin {
+		header Access-Control-Allow-Origin "https://latinre.mybeehome.com"
+	}
+
+	handle @origemSite {
+		header Access-Control-Allow-Origin "https://latin-re.com"
+	}
+}
+
+# Ambiente de login
+lara-interna.latin-re.com {
+	reverse_proxy 127.0.0.1:8503
+	import permissao_iframe_e_cors
+}
+
+# InsurMinds - Análise e Comparação de Apólices D&O
+latintech.latin-re.com {
+	reverse_proxy 127.0.0.1:8505 {
+		transport http {
+			response_header_timeout 300s
+			dial_timeout 30s
+		}
+	}
+}
+
+# Ambiente de login LARA v2
+lara.assistente.latin-re.com {
+	reverse_proxy localhost:8504 {
+		transport http {
+			response_header_timeout 300s
+			dial_timeout 300s
+		}
+	}
+	log {
+		output file C:\caddy\lara-frontend.log
+		level DEBUG
+	}
+}
+
+# Autenticação Microsoft -> Portal de Reembolso
+reembolso.latin-re.com {
+	reverse_proxy 127.0.0.1:8501 {
+		transport http {
+			response_header_timeout 120s
+			dial_timeout 120s
+		}
+	}
+	log {
+		output file C:\caddy\reembolso-auth.log
+		level INFO
+	}
+}
+
+# Gestão Orçamentária Latin Re
+orcamento.latin-re.com {
+	reverse_proxy 127.0.0.1:8502 {
+		transport http {
+			response_header_timeout 120s
+			dial_timeout 30s
+		}
+	}
+	log {
+		output file C:\caddy\orcamento.log
+		level INFO
+	}
+}
+
+# Latin Re — site institucional
+latin-re.com, www.latin-re.com {
+	reverse_proxy 127.0.0.1:8506 {
+		transport http {
+			response_header_timeout 300s
+			dial_timeout 300s
+		}
+		flush_interval -1
+	}
+}

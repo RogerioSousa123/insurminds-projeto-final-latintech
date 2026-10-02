@@ -28,6 +28,7 @@ def _float_env(name: str, default: float) -> float:
 class Settings:
     llm_provider: str = os.getenv("LLM_PROVIDER", "demo").strip().lower()
     anthropic_api_key: str = os.getenv("ANTHROPIC_API_KEY", "").strip()
+    anthropic_workspace_id: str = os.getenv("ANTHROPIC_WORKSPACE_ID", "").strip()
     anthropic_model: str = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-5").strip()
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "").strip()
     openai_model: str = os.getenv("OPENAI_MODEL", "gpt-4.1-mini").strip()
@@ -55,4 +56,3 @@ class Settings:
         if self.llm_provider == "openai" and not self.openai_api_key:
             errors.append("OPENAI_API_KEY não foi configurada.")
         return errors
-

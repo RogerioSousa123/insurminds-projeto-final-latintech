@@ -22,15 +22,19 @@ class AnthropicProvider:
         self.client = Anthropic(api_key=settings.anthropic_api_key)
         self.model_name = settings.anthropic_model
         self.temperature = settings.llm_temperature
+        self.workspace_id = settings.anthropic_workspace_id
 
     def chat(self, system: str, user: str, max_tokens: int = 4096) -> ChatResult:
+        extra_headers = (
+            {"anthropic-workspace-id": self.workspace_id} if self.workspace_id else None
+        )
         response = _with_retry(
             lambda: self.client.messages.create(
                 model=self.model_name,
                 max_tokens=max_tokens,
-                temperature=self.temperature,
                 system=system,
                 messages=[{"role": "user", "content": user}],
+                extra_headers=extra_headers,
             )
         )
         text = "".join(block.text for block in response.content if getattr(block, "type", "") == "text")
@@ -182,6 +186,11 @@ def _with_retry(call: Callable, attempts: int = 3):
             return call()
         except Exception as exc:  # o SDK expõe classes distintas por versão
             last_error = exc
+            status_code = getattr(exc, "status_code", None)
+            if isinstance(exc, (TypeError, ValueError)):
+                raise
+            if status_code is not None and status_code not in {408, 409, 429} and status_code < 500:
+                raise
             if attempt == attempts - 1:
                 break
             time.sleep(1.5 * (2**attempt))
