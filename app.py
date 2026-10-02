@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import json
 import sys
 from pathlib import Path
@@ -9,6 +10,10 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 SRC_ROOT = PROJECT_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
+
+LOGO_DATA_URI = "data:image/png;base64," + base64.b64encode(
+    (PROJECT_ROOT / "assets" / "logo-latin-re.png").read_bytes()
+).decode("ascii")
 
 import pandas as pd
 import plotly.express as px
@@ -27,18 +32,248 @@ from insurminds.storage.repository import AnalysisRepository
 
 st.set_page_config(
     page_title="InsurMinds D&O Intelligence",
-    page_icon="🛡️",
+    page_icon="🔷",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 st.markdown(
     """
     <style>
-    .block-container {padding-top: 1.6rem; padding-bottom: 3rem;}
-    [data-testid="stMetric"] {background: #f4f7fa; border: 1px solid #dce4ea; padding: .8rem; border-radius: .65rem;}
-    .insur-badge {display:inline-block; padding:.2rem .55rem; border-radius:1rem; background:#e7f0f7; color:#12304a; font-size:.82rem;}
-    .small-note {color:#5c6d78; font-size:.88rem;}
+    :root {
+        --im-primary: #18C2F2;
+        --im-primary-dark: #078CB8;
+        --im-navy: #102A43;
+        --im-text: #243B53;
+        --im-muted: #627D98;
+        --im-bg: #F5FAFD;
+        --im-surface: #FFFFFF;
+        --im-border: #DCECF3;
+        --im-soft: #EAF9FE;
+    }
+
+    .stApp {
+        background:
+            radial-gradient(circle at 92% 2%, rgba(24, 194, 242, .13), transparent 24rem),
+            linear-gradient(180deg, #FFFFFF 0%, var(--im-bg) 34%, #F8FBFD 100%);
+        color: var(--im-text);
+    }
+    [data-testid="stHeader"] {background: transparent;}
+    [data-testid="stToolbar"], #MainMenu, footer {visibility: hidden;}
+    [data-testid="collapsedControl"] {display: none;}
+    .block-container {
+        max-width: 1320px;
+        padding-top: 1.35rem;
+        padding-bottom: 3.5rem;
+    }
+
+    .im-hero {
+        position: relative;
+        overflow: hidden;
+        padding: 2.3rem 2.6rem 2.15rem;
+        margin-bottom: 1.15rem;
+        border: 1px solid rgba(24, 194, 242, .24);
+        border-radius: 1.4rem;
+        background: linear-gradient(118deg, #FFFFFF 0%, #F4FCFF 68%, #E5F9FF 100%);
+        box-shadow: 0 18px 55px rgba(16, 42, 67, .075);
+    }
+    .im-hero::after {
+        content: "";
+        position: absolute;
+        width: 18rem;
+        height: 18rem;
+        right: -7rem;
+        top: -10rem;
+        border-radius: 50%;
+        background: rgba(24, 194, 242, .18);
+    }
+    .im-brand {
+        display: flex;
+        align-items: center;
+        gap: .9rem;
+        margin-bottom: 1.35rem;
+    }
+    .im-logo {
+        width: 6.4rem;
+        height: auto;
+        display: block;
+        object-fit: contain;
+    }
+    .im-brand-separator {
+        width: 1px;
+        height: 2.7rem;
+        background: #CFE7F0;
+    }
+    .im-product-name {
+        display: flex;
+        flex-direction: column;
+        gap: .14rem;
+        color: var(--im-navy);
+        line-height: 1;
+    }
+    .im-product-name strong {
+        font-size: .92rem;
+        font-weight: 800;
+        letter-spacing: -.01em;
+    }
+    .im-product-name small {
+        color: var(--im-primary-dark);
+        font-size: .63rem;
+        font-weight: 800;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+    }
+    .im-hero h1 {
+        max-width: 760px;
+        margin: 0;
+        color: var(--im-navy);
+        font-size: clamp(2rem, 3.8vw, 3.35rem);
+        line-height: 1.04;
+        letter-spacing: -.045em;
+        font-weight: 760;
+    }
+    .im-hero p {
+        max-width: 720px;
+        margin: 1rem 0 1.25rem;
+        color: var(--im-muted);
+        font-size: 1.05rem;
+        line-height: 1.65;
+    }
+    .im-chips {display: flex; flex-wrap: wrap; gap: .55rem;}
+    .im-chip {
+        padding: .42rem .72rem;
+        border: 1px solid var(--im-border);
+        border-radius: 999px;
+        background: rgba(255,255,255,.82);
+        color: #36566F;
+        font-size: .78rem;
+        font-weight: 650;
+    }
+
+    .im-flow {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: .8rem;
+        margin: 0 0 1.35rem;
+    }
+    .im-flow-card {
+        padding: 1rem 1.1rem;
+        border: 1px solid var(--im-border);
+        border-radius: .9rem;
+        background: rgba(255,255,255,.86);
+        box-shadow: 0 8px 24px rgba(16,42,67,.04);
+    }
+    .im-flow-number {
+        color: var(--im-primary-dark);
+        font-size: .72rem;
+        font-weight: 800;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+    }
+    .im-flow-title {margin-top: .2rem; color: var(--im-navy); font-size: .94rem; font-weight: 720;}
+    .im-flow-copy {margin-top: .16rem; color: var(--im-muted); font-size: .78rem; line-height: 1.4;}
+
+    div[data-baseweb="tab-list"], div[role="tablist"] {
+        gap: .35rem;
+        padding: .35rem;
+        border: 1px solid var(--im-border);
+        border-radius: .85rem;
+        background: rgba(255,255,255,.9);
+        box-shadow: 0 8px 24px rgba(16,42,67,.035);
+    }
+    button[data-baseweb="tab"], button[role="tab"], div[role="tab"] {
+        height: 2.6rem;
+        padding: 0 1.05rem;
+        border-radius: .62rem;
+        color: var(--im-muted);
+        font-weight: 650;
+        cursor: pointer;
+    }
+    button[data-baseweb="tab"][aria-selected="true"], button[role="tab"][aria-selected="true"],
+    div[role="tab"][aria-selected="true"] {
+        background: var(--im-soft);
+        color: #057EA8;
+    }
+    div[data-baseweb="tab-highlight"], div[data-baseweb="tab-border"],
+    .react-aria-SelectionIndicator {display: none !important;}
+
+    h1, h2, h3, h4 {color: var(--im-navy); letter-spacing: -.025em;}
+    h2 {font-size: 1.55rem !important; margin-top: .4rem !important;}
+    p, label, [data-testid="stCaptionContainer"] {color: var(--im-muted);}
+
+    [data-testid="stMetric"] {
+        padding: 1rem 1.05rem;
+        border: 1px solid var(--im-border);
+        border-radius: .9rem;
+        background: rgba(255,255,255,.92);
+        box-shadow: 0 9px 28px rgba(16,42,67,.045);
+    }
+    [data-testid="stMetricLabel"] {color: var(--im-muted);}
+    [data-testid="stMetricValue"] {color: var(--im-navy); font-weight: 750;}
+
+    [data-testid="stFileUploaderDropzone"] {
+        min-height: 11rem;
+        border: 1.5px dashed #9BDFF3;
+        border-radius: 1rem;
+        background: linear-gradient(135deg, #FFFFFF 0%, #F0FBFF 100%);
+    }
+    [data-testid="stFileUploaderDropzone"]:hover {border-color: var(--im-primary);}
+
+    .stButton > button, .stDownloadButton > button {
+        min-height: 2.65rem;
+        border-radius: .7rem;
+        border-color: var(--im-border);
+        font-weight: 680;
+        transition: all .18s ease;
+    }
+    .stButton > button:hover, .stDownloadButton > button:hover {
+        border-color: var(--im-primary);
+        color: #057EA8;
+        transform: translateY(-1px);
+        box-shadow: 0 8px 20px rgba(24,194,242,.13);
+    }
+    .stButton > button[kind="primary"], button[kind="primary"] {
+        border: 1px solid var(--im-primary);
+        background: var(--im-primary);
+        color: #073B4C;
+        box-shadow: 0 8px 20px rgba(24,194,242,.22);
+    }
+    .stButton > button[kind="primary"]:hover, button[kind="primary"]:hover {
+        border-color: #08AFDC;
+        background: #08B8E8;
+        color: #052F3D;
+    }
+
+    [data-testid="stDataFrame"], [data-testid="stPlotlyChart"], details {
+        overflow: hidden;
+        border: 1px solid var(--im-border);
+        border-radius: .9rem;
+        background: white;
+        box-shadow: 0 8px 25px rgba(16,42,67,.035);
+    }
+    [data-testid="stAlert"] {border-radius: .8rem;}
+    [data-testid="stStatusWidget"] {border-color: var(--im-border); border-radius: .85rem;}
+    div[data-baseweb="select"] > div, textarea, input {
+        border-color: var(--im-border) !important;
+        border-radius: .7rem !important;
+    }
+    hr {border-color: var(--im-border);}
+
+    .im-footer {
+        margin-top: 2.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--im-border);
+        color: #829AB1;
+        font-size: .75rem;
+        text-align: center;
+    }
+
+    @media (max-width: 800px) {
+        .block-container {padding: .8rem .85rem 2.5rem;}
+        .im-hero {padding: 1.5rem 1.25rem; border-radius: 1rem;}
+        .im-flow {grid-template-columns: 1fr;}
+        button[data-baseweb="tab"] {padding: 0 .65rem; font-size: .82rem;}
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -93,38 +328,44 @@ def attention_icon(level: AttentionLevel) -> str:
     }[level]
 
 
-with st.sidebar:
-    st.markdown("## 🛡️ InsurMinds")
-    st.caption("D&O Intelligence · MVP acadêmico")
-    st.divider()
-    st.markdown("**Configuração ativa**")
-    st.write(f"Provedor: `{settings.llm_provider}`")
-    st.write(f"Modelo: `{settings.model_name}`")
-    st.write(f"Banco local: `{settings.database_path}`")
-    if settings.llm_provider == "demo":
-        st.warning("Modo demo: útil para navegar, mas não comprova uso de IA generativa.")
-    if resource_error:
-        st.error(resource_error)
-        st.caption("Configure o arquivo .env e reinicie a aplicação.")
-    st.divider()
-    st.caption(
-        "A análise é assistiva, pode conter erros e não substitui avaliação jurídica, atuarial ou de subscrição."
-    )
-
-
-st.title("Análise e comparação explicável de apólices D&O")
 st.markdown(
-    "Envie documentos, estruture cláusulas com IA, compare condições e confira cada conclusão na página de origem."
+    f"""
+    <section class="im-hero">
+        <div class="im-brand">
+            <img class="im-logo" src="{LOGO_DATA_URI}" alt="Latin Re">
+            <span class="im-brand-separator"></span>
+            <span class="im-product-name"><strong>InsurMinds</strong><small>D&amp;O Intelligence</small></span>
+        </div>
+        <h1>Apólices complexas.<br>Comparações mais claras.</h1>
+        <p>Organize cláusulas, encontre diferenças relevantes e confira cada conclusão diretamente na página de origem.</p>
+        <div class="im-chips">
+            <span class="im-chip">PDF e imagens</span>
+            <span class="im-chip">26 critérios D&amp;O</span>
+            <span class="im-chip">Evidências por página</span>
+            <span class="im-chip">Relatório comparativo</span>
+        </div>
+    </section>
+    <section class="im-flow">
+        <div class="im-flow-card"><div class="im-flow-number">Etapa 01</div><div class="im-flow-title">Envie as apólices</div><div class="im-flow-copy">Adicione dois ou mais documentos para iniciar.</div></div>
+        <div class="im-flow-card"><div class="im-flow-number">Etapa 02</div><div class="im-flow-title">Revise as evidências</div><div class="im-flow-copy">Confira valores, cláusulas, páginas e alertas.</div></div>
+        <div class="im-flow-card"><div class="im-flow-number">Etapa 03</div><div class="im-flow-title">Compare e exporte</div><div class="im-flow-copy">Visualize diferenças e gere o relatório final.</div></div>
+    </section>
+    """,
+    unsafe_allow_html=True,
 )
 
 tab_upload, tab_policies, tab_compare, tab_chat, tab_architecture = st.tabs(
-    ["1 · Processar", "2 · Apólices", "3 · Comparar", "4 · Copiloto", "Arquitetura"]
+    ["Documentos", "Apólices", "Comparação", "Copiloto", "Como funciona"]
 )
 
 
 with tab_upload:
-    st.subheader("Processar documentos")
-    st.caption("Formatos: PDF, PNG, JPG, TIFF ou WebP · até 50 MB · limite padrão de 150 páginas")
+    st.subheader("Comece pelos documentos")
+    st.caption("Envie PDF, PNG, JPG, TIFF ou WebP · até 50 MB por arquivo")
+    if resource_error:
+        st.error("Não foi possível inicializar a IA. Confira as variáveis do arquivo .env e reinicie a aplicação.")
+    elif settings.llm_provider == "demo":
+        st.info("A aplicação está no modo de demonstração. Configure uma API de IA antes da apresentação final.")
     uploads = st.file_uploader(
         "Selecione duas ou mais apólices",
         type=["pdf", "png", "jpg", "jpeg", "tif", "tiff", "webp"],
@@ -197,10 +438,6 @@ with tab_policies:
         col3.metric("Ambíguos", ambiguous_count)
         col4.metric("Tempo", f"{selected.elapsed_seconds:.1f}s")
 
-        st.caption(
-            f"Modelo: {selected.model_name} · OCR em {len(selected.document.ocr_pages)} página(s) · "
-            f"Tokens: {selected.input_tokens:,} entrada / {selected.output_tokens:,} saída"
-        )
         rows = [
             {
                 "Categoria": field.category,
@@ -229,6 +466,13 @@ with tab_policies:
             with st.expander(f"Avisos do processamento ({len(selected.warnings)})"):
                 for warning in selected.warnings:
                     st.warning(warning)
+
+        with st.expander("Detalhes técnicos do processamento"):
+            detail1, detail2, detail3 = st.columns(3)
+            detail1.metric("Páginas com OCR", len(selected.document.ocr_pages))
+            detail2.metric("Tokens de entrada", f"{selected.input_tokens:,}")
+            detail3.metric("Tokens de saída", f"{selected.output_tokens:,}")
+            st.caption(f"Modelo utilizado: {selected.model_name}")
 
         st.download_button(
             "Baixar análise em JSON",
@@ -403,7 +647,7 @@ with tab_chat:
 
 
 with tab_architecture:
-    st.subheader("Arquitetura do MVP")
+    st.subheader("Como a InsurMinds trabalha")
     st.code(
         """Documento PDF/Imagem
         │
@@ -437,3 +681,8 @@ Validador de evidências ──► Pydantic ──► SQLite
         - Prompts tratam o documento como dado não confiável para reduzir ataques de injeção.
         """
     )
+
+st.markdown(
+    '<div class="im-footer">InsurMinds · Inteligência aplicada à análise de seguros D&amp;O</div>',
+    unsafe_allow_html=True,
+)
