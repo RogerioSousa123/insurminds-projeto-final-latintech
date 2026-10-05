@@ -5,8 +5,13 @@
 Relatório Técnico — Projeto Final I2A2  
 Versão 1.0 — outubro de 2026
 
-**Integrantes:** preencher nomes completos antes da entrega.  
-**Repositório:** preencher URL pública antes da entrega.
+**Grupo:** LatinTech
+
+**Integrantes:** Fábio Castro; Lucas Godois; Pedro Campos; Rogério Sousa; Fernando Gonçalves.
+
+**Repositório:** https://github.com/RogerioSousa123/insurminds-projeto-final-latintech
+
+**Aplicação:** https://latintech.latin-re.com
 
 ---
 
@@ -56,10 +61,10 @@ Não fazem parte do escopo autenticação, gestão de organizações, integraç�
 
 | Requisito | Implementação | Evidência no sistema |
 |---|---|---|
-| Ler PDF ou imagem | PyMuPDF, Pillow e Tesseract | aba Processar |
+| Ler PDF ou imagem | PyMuPDF, Pillow e Tesseract | aba Documentos |
 | Extrair automaticamente | fluxo por lotes e agente extrator | progresso e análise individual |
 | Estruturar informações | taxonomia fechada e Pydantic | tabela de 26 critérios |
-| Comparar ao menos duas apólices | comparador determinístico | aba Comparar |
+| Comparar ao menos duas apólices | comparador determinístico | aba Comparação |
 | Mostrar principais diferenças | matriz, atenção e resumo | métricas e semáforo |
 | Usar IA generativa | adaptadores Anthropic/OpenAI | modelo e tokens exibidos |
 | Disponibilizar interface | aplicação Streamlit | cinco abas funcionais |
@@ -212,11 +217,11 @@ O semáforo orienta revisão e não representa recomendação de compra. Cláusu
 
 A interface possui cinco áreas:
 
-1. **Processar:** upload, cache e progresso por etapa;
+1. **Documentos:** upload, cache e progresso por etapa;
 2. **Apólices:** métricas, 26 critérios, evidências e avisos;
-3. **Comparar:** matriz, semáforo, resumo e downloads;
+3. **Comparação:** matriz, semáforo, resumo e downloads;
 4. **Copiloto:** perguntas fundamentadas nos documentos selecionados;
-5. **Arquitetura:** explicação incorporada ao protótipo.
+5. **Como funciona:** explicação da arquitetura incorporada ao protótipo.
 
 O modelo, consumo de tokens, páginas OCR e duração ficam visíveis para facilitar demonstração técnica.
 
@@ -241,7 +246,7 @@ O conteúdo documental pode conter prompt injection. Os prompts declaram o docum
 
 ## 16. Testes e resultados
 
-A suíte automatizada contém nove testes e foi executada com sucesso no ambiente de desenvolvimento.
+A suíte automatizada contém 14 testes e foi executada com sucesso no ambiente de desenvolvimento.
 
 Os cenários cobrem:
 
@@ -250,10 +255,14 @@ Os cenários cobrem:
 - aceitação de campo permitido com evidência válida;
 - descarte de chave inventada pela IA;
 - descarte de evidência inexistente;
+- continuidade da análise quando um lote devolve JSON inválido;
+- consolidação de cláusulas narrativas sem falsa ambiguidade;
 - detecção de diferença em limite monetário;
+- seleção de contexto com as duas apólices no copiloto;
+- normalização e validação de citações em múltiplas páginas;
 - persistência e recuperação no SQLite;
 - extração de texto de PDF;
-- geração de relatório PDF válido.
+- geração de relatório PDF válido, inclusive com textos longos.
 
 Os documentos da pasta `examples` são sintéticos e servem para teste funcional. Eles não constituem contratos, condições de seguradora nem orientação de cobertura.
 
@@ -333,13 +342,12 @@ As instruções completas estão no README do repositório.
 
 ## 21. Fontes de dados
 
-Os dois documentos distribuídos em `examples` foram redigidos exclusivamente para demonstração do projeto. São sintéticos, não reproduzem uma apólice comercial e não possuem validade contratual.
+Os dois documentos distribuídos em `examples` foram redigidos exclusivamente para demonstração do projeto. São sintéticos, não reproduzem uma apólice comercial e não possuem validade contratual. Por serem criações originais do grupo, não dependem de fonte externa e permitem demonstrar o sistema sem expor dados pessoais ou contratuais.
 
-Se o grupo substituir ou complementar esses arquivos com documentos públicos, deverá registrar nesta seção o título, a seguradora ou órgão, a URL e a data de acesso.
+Documentos públicos podem ser usados em validações adicionais, mas não são redistribuídos no repositório. Sempre que um documento externo for exibido na apresentação, seu título, entidade responsável, URL e data de acesso deverão ser informados.
 
 ## 22. Conclusão
 
 A InsurMinds demonstra a integração de OCR, IA generativa, agentes especializados, banco de dados, automação e interface de consulta em um fluxo coerente. A arquitetura prioriza separação de responsabilidades, evidência, validação e transparência.
 
 O resultado é um MVP simples o suficiente para ser compreendido pelo grupo e completo o suficiente para processar documentos, estruturar informações, comparar apólices e demonstrar valor ao usuário. A principal contribuição não é substituir o especialista, mas transformar leitura dispersa em uma análise verificável e reutilizável.
-

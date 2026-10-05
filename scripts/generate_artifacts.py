@@ -18,10 +18,13 @@ ARTIFACTS = ROOT / "Projeto_Final_Artefatos"
 REPORT_SOURCE = ROOT / "docs" / "RELATORIO_TECNICO.md"
 
 NAVY = "12304A"
-TEAL = "18A6A6"
+TEAL = "18C2F2"
 CORAL = "F26B5B"
 LIGHT = "F3F6F8"
 MUTED = "52616B"
+TEAM_NAME = "LatinTech"
+MEMBERS = "Fábio Castro · Lucas Godois · Pedro Campos · Rogério Sousa · Fernando Gonçalves"
+REPOSITORY_URL = "github.com/RogerioSousa123/insurminds-projeto-final-latintech"
 
 
 def inline_markup(text: str) -> str:
@@ -108,7 +111,7 @@ def generate_report_pdf() -> Path:
         topMargin=18 * mm,
         bottomMargin=18 * mm,
         title="InsurMinds — Relatório Técnico",
-        author="InsurMinds",
+        author=TEAM_NAME,
     )
 
     def footer(canvas, doc_obj):
@@ -173,6 +176,8 @@ def generate_pitch_deck() -> Path:
         line = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.7), Inches(1.52), Inches(1.1), Inches(0.06))
         line.fill.solid(); line.fill.fore_color.rgb = palette["coral"]; line.line.fill.background()
         add_text(slide, f"{number:02d}", 12.25, 0.35, 0.4, 0.3, 9, "muted" if not dark else "white", True, PP_ALIGN.RIGHT)
+        if not dark:
+            slide.shapes.add_picture(str(ROOT / "assets" / "logo-latin-re.png"), Inches(11.05), Inches(0.13), width=Inches(0.95))
         return slide
 
     def card(slide, x, y, w, h, heading, body, accent="teal", number=None):
@@ -195,7 +200,7 @@ def generate_pitch_deck() -> Path:
     shield = slide.shapes.add_shape(MSO_SHAPE.HEXAGON, Inches(9.5), Inches(2.15), Inches(2.35), Inches(2.55))
     shield.fill.solid(); shield.fill.fore_color.rgb = palette["teal"]; shield.line.fill.background()
     add_text(slide, "D&O", 9.82, 2.82, 1.7, 0.7, 30, "white", True, PP_ALIGN.CENTER, valign=MSO_ANCHOR.MIDDLE)
-    add_text(slide, "EQUIPE: PREENCHER NOMES", 0.7, 6.75, 6, 0.3, 10, "white", True)
+    add_text(slide, f"{TEAM_NAME.upper()} · {MEMBERS}", 0.7, 6.68, 11.8, 0.35, 9, "white", True)
 
     slide = base_slide("Comparar apólices ainda é um trabalho manual", "Problema", 2)
     card(slide, 0.7, 2.0, 3.85, 3.5, "Documentos extensos", "Cláusulas, limites e exclusões aparecem em páginas diferentes e com terminologia pouco padronizada.", "coral", 1)
@@ -278,7 +283,7 @@ def generate_pitch_deck() -> Path:
     metrics = [
         ("26", "critérios D&O estruturados"),
         ("4", "apólices por comparação"),
-        ("9/9", "testes automatizados aprovados"),
+        ("14/14", "testes automatizados aprovados"),
         ("3", "formatos de exportação"),
     ]
     for index, (number, label) in enumerate(metrics):
@@ -297,7 +302,8 @@ def generate_pitch_deck() -> Path:
     slide = base_slide("Uma decisão melhor começa por uma evidência melhor", "Encerramento", 9, dark=True)
     add_text(slide, "A InsurMinds transforma apólices complexas em uma comparação estruturada, explicável e verificável — sem retirar o especialista da decisão.", 1.25, 2.0, 10.8, 1.65, 27, "white", True, PP_ALIGN.CENTER, valign=MSO_ANCHOR.MIDDLE)
     add_text(slide, "PROBLEMA  →  EVIDÊNCIA  →  COMPARAÇÃO  →  DECISÃO HUMANA", 1.4, 4.25, 10.5, 0.6, 16, "teal", True, PP_ALIGN.CENTER)
-    add_text(slide, "EQUIPE: PREENCHER NOMES · REPOSITÓRIO: PREENCHER URL", 1.3, 6.35, 10.7, 0.4, 10, "white", True, PP_ALIGN.CENTER)
+    add_text(slide, f"GRUPO {TEAM_NAME.upper()} · {MEMBERS}", 1.0, 6.12, 11.3, 0.34, 9, "white", True, PP_ALIGN.CENTER)
+    add_text(slide, REPOSITORY_URL, 1.0, 6.53, 11.3, 0.3, 9, "teal", True, PP_ALIGN.CENTER)
 
     presentation.save(str(output))
     return output

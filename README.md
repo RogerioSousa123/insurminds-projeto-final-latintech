@@ -2,7 +2,10 @@
 
 Protótipo acadêmico que lê apólices D&O em PDF ou imagem, organiza 26 critérios relevantes, compara documentos e responde perguntas com rastreabilidade por página e trecho.
 
-O projeto foi desenvolvido para o Projeto Final do módulo avançado do Instituto de Inteligência Artificial Aplicada (I2A2). Seu objetivo é apoiar o trabalho de especialistas, não substituir análise jurídica, atuarial, de subscrição ou corretagem.
+O projeto foi desenvolvido pelo grupo **LatinTech** para o Projeto Final do módulo avançado do Instituto de Inteligência Artificial Aplicada (I2A2). Seu objetivo é apoiar o trabalho de especialistas, não substituir análise jurídica, atuarial, de subscrição ou corretagem.
+
+**Aplicação:** [latintech.latin-re.com](https://latintech.latin-re.com)<br>
+**Repositório:** [github.com/RogerioSousa123/insurminds-projeto-final-latintech](https://github.com/RogerioSousa123/insurminds-projeto-final-latintech)
 
 ## Principais funcionalidades
 
@@ -59,8 +62,8 @@ O Tesseract é opcional para PDFs que já possuem camada de texto. No Windows, i
 No PowerShell:
 
 ```powershell
-git clone URL_DO_REPOSITORIO
-cd PROJETOFINAL
+git clone https://github.com/RogerioSousa123/insurminds-projeto-final-latintech.git
+cd insurminds-projeto-final-latintech
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
@@ -70,6 +73,8 @@ Copy-Item .env.example .env
 No Linux ou macOS:
 
 ```bash
+git clone https://github.com/RogerioSousa123/insurminds-projeto-final-latintech.git
+cd insurminds-projeto-final-latintech
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -84,7 +89,7 @@ cp .env.example .env
 LLM_PROVIDER=anthropic
 ANTHROPIC_API_KEY=sua_chave
 # Preencha se a API informar que a chave não está vinculada a um workspace:
-ANTHROPIC_WORKSPACE_ID=wrk_...
+ANTHROPIC_WORKSPACE_ID=wrkspc_...
 ANTHROPIC_MODEL=modelo_disponivel_na_sua_conta
 ```
 
@@ -122,9 +127,9 @@ Depois, abra `http://localhost:8505`. Em produção, o Caddy publica a aplicaç�
 
 Fluxo recomendado:
 
-1. acesse **Processar** e envie duas apólices;
+1. acesse **Documentos** e envie duas apólices;
 2. confira campos, avisos e evidências em **Apólices**;
-3. selecione os documentos em **Comparar**;
+3. selecione os documentos em **Comparação**;
 4. exporte o relatório e teste perguntas no **Copiloto**.
 
 ## Execução persistente e domínio
@@ -152,7 +157,7 @@ Invoke-WebRequest http://127.0.0.1:8505/_stcore/health -UseBasicParsing
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-Os testes cobrem parsing de respostas, rejeição de evidências inventadas, extração de PDF, comparação, SQLite e geração do relatório PDF.
+A suíte possui 14 testes automatizados. Ela cobre parsing e recuperação de respostas JSON, rejeição de evidências inventadas, consolidação de cláusulas, extração de PDF, comparação, citações do copiloto, SQLite e geração do relatório PDF.
 
 ## Estrutura do repositório
 
@@ -171,6 +176,8 @@ Os testes cobrem parsing de respostas, rejeição de evidências inventadas, ext
 └── Projeto_Final_Artefatos/
     ├── InsurMinds_Projeto_Final.pptx
     ├── InsurMinds_Relatorio_Tecnico.pdf
+    ├── InsurMinds_Projeto_Final_Codigo.zip
+    ├── InsurMinds_Projeto_Final.mp4      # incluído após a gravação
     └── ROTEIRO_VIDEO.md
 ```
 
@@ -200,11 +207,13 @@ Para o MVP acadêmico, documentos enviados ao provedor de IA devem ser públicos
 
 ## Integrantes
 
-> Substituir antes da entrega.
+**Grupo: LatinTech**
 
-- Nome completo — função no projeto
-- Nome completo — função no projeto
-- Nome completo — função no projeto
+- Fábio Castro
+- Lucas Godois
+- Pedro Campos
+- Rogério Sousa
+- Fernando Gonçalves
 
 ## Artefatos e documentação
 

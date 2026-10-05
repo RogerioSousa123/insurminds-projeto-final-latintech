@@ -10,13 +10,18 @@ Demonstrar que a plataforma processa documentos, controla respostas da IA, persi
 |---|---|---|
 | JSON | resposta pura ou cercada por Markdown | objeto extraído corretamente |
 | JSON | lista ou conteúdo inválido | erro controlado |
+| JSON | um lote inválido entre lotes válidos | análise parcial preservada |
 | Extração | campo permitido com trecho literal | campo aceito |
 | Extração | chave inventada pelo modelo | campo descartado e aviso registrado |
 | Evidência | trecho inexistente na página | campo descartado |
+| Consolidação | cláusulas narrativas complementares | texto consolidado sem falsa ambiguidade |
 | Comparação | limites normalizados distintos | diferença e atenção alta |
+| Copiloto | pergunta comparativa ampla | contexto contém as duas apólices |
+| Copiloto | citações de várias páginas | citações normalizadas e validadas |
 | Persistência | salvar e recarregar análise | igualdade dos campos principais |
 | PDF | documento com camada textual | texto preservado por página |
 | Relatório | comparação válida | arquivo iniciado com assinatura `%PDF` |
+| Relatório | valores comparativos longos | PDF gerado sem erro de layout |
 
 ## Testes manuais antes da entrega
 
@@ -43,4 +48,3 @@ Em uma amostra rotulada manualmente, calcular por campo:
 - tempo médio e tokens por documento.
 
 Para o MVP, uma planilha com 20 a 30 verificações manuais já demonstra avaliação responsável.
-
