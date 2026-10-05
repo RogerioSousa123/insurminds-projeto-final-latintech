@@ -113,3 +113,109 @@ def test_discards_unverifiable_evidence(tmp_path):
     assert analysis.field_map()["franquia_geral"].status == FieldStatus.NAO_LOCALIZADO
     assert any("descartado" in warning for warning in analysis.warnings)
 
+
+class PartiallyBrokenProvider:
+    model_name = "fake-model"
+
+    def chat(self, system: str, user: str, max_tokens: int = 4096) -> ChatResult:
+        if "<<<PAGINA 1>>>" in user and "TAREFA: EXTRAIR_CLAUSULAS" in user:
+            return ChatResult(
+                text=json.dumps(
+                    {
+                        "items": [
+                            {
+                                "key": "custos_defesa",
+                                "status": "encontrado",
+                                "value_text": "Custos de defesa cobertos.",
+                                "normalized_value": "coberto",
+                                "summary": "Cobertura prevista.",
+                                "confidence": 0.9,
+                                "evidences": [
+                                    {
+                                        "page": 1,
+                                        "excerpt": "Custos de defesa cobertos.",
+                                        "confidence": 0.9,
+                                    }
+                                ],
+                            }
+                        ],
+                        "warnings": [],
+                    }
+                ),
+                model=self.model_name,
+            )
+        return ChatResult(text='{"items": [{"key": "quebrado"}', model=self.model_name)
+
+
+def test_keeps_partial_analysis_when_one_chunk_is_invalid(tmp_path):
+    settings = Settings(database_path=tmp_path / "test.db", llm_chunk_chars=80)
+    pages = [
+        PageText(page=1, text="Custos de defesa cobertos. " * 4),
+        PageText(page=2, text="Trecho que sempre retorna JSON inválido. " * 4),
+    ]
+    bundle = DocumentBundle(
+        document=DocumentInfo(
+            id="doc3",
+            filename="parcial.pdf",
+            sha256="c" * 64,
+            mime_type="application/pdf",
+            page_count=2,
+            character_count=sum(len(page.text) for page in pages),
+        ),
+        pages=pages,
+        warnings=[],
+    )
+
+    analysis = ExtractionService(settings, PartiallyBrokenProvider()).analyze(bundle)
+
+    assert analysis.field_map()["custos_defesa"].status == FieldStatus.ENCONTRADO
+    assert any("Análise parcial" in warning for warning in analysis.warnings)
+
+
+class NarrativeVariantsProvider:
+    model_name = "fake-model"
+
+    def chat(self, system: str, user: str, max_tokens: int = 4096) -> ChatResult:
+        page = 1 if "<<<PAGINA 1>>>" in user else 2
+        excerpt = "Custos de defesa cobertos." if page == 1 else "Custos de defesa consomem o limite."
+        payload = {
+            "items": [
+                {
+                    "key": "custos_defesa",
+                    "status": "encontrado",
+                    "value_text": excerpt,
+                    "normalized_value": excerpt,
+                    "summary": excerpt,
+                    "confidence": 0.9,
+                    "evidences": [{"page": page, "excerpt": excerpt, "confidence": 0.9}],
+                }
+            ],
+            "warnings": [],
+        }
+        return ChatResult(text=json.dumps(payload), model=self.model_name)
+
+
+def test_consolidates_narrative_clauses_without_marking_ambiguity(tmp_path):
+    settings = Settings(database_path=tmp_path / "test.db", llm_chunk_chars=80)
+    pages = [
+        PageText(page=1, text="Custos de defesa cobertos. " * 4),
+        PageText(page=2, text="Custos de defesa consomem o limite. " * 4),
+    ]
+    bundle = DocumentBundle(
+        document=DocumentInfo(
+            id="doc4",
+            filename="clausulas.pdf",
+            sha256="d" * 64,
+            mime_type="application/pdf",
+            page_count=2,
+            character_count=sum(len(page.text) for page in pages),
+        ),
+        pages=pages,
+        warnings=[],
+    )
+
+    analysis = ExtractionService(settings, NarrativeVariantsProvider()).analyze(bundle)
+
+    field = analysis.field_map()["custos_defesa"]
+    assert field.status == FieldStatus.ENCONTRADO
+    assert len(field.evidences) == 2

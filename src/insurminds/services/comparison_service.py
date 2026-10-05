@@ -14,13 +14,14 @@ from insurminds.domain.models import (
 )
 from insurminds.domain.taxonomy import FIELD_DEFINITIONS
 from insurminds.llm.base import ChatProvider
-from insurminds.services.json_utils import JSONResponseError, parse_json_object
 
 
 COMPARISON_SYSTEM_PROMPT = """Você é um analista técnico de seguros D&O.
 Explique diferenças usando somente os dados estruturados fornecidos.
 Não invente coberturas, não transforme "não localizado" em "não coberto" e não dê aconselhamento jurídico.
 Evite declarar uma apólice como universalmente melhor: descreva amplitude, restrições e pontos que exigem validação humana.
+Um número de processo SUSEP não é número de apólice; a data da versão das Condições Gerais não é vigência individual.
+Quando um valor depende da Especificação não fornecida, trate-o como lacuna, não como limite ou franquia efetivos.
 Seja objetivo e escreva em português do Brasil.
 """
 
@@ -86,18 +87,17 @@ class ComparisonService:
     def _enrich_with_ai(self, result: ComparisonResult) -> None:
         payload = []
         for row in result.rows:
-            if not row.is_different and row.attention != AttentionLevel.INDETERMINADA:
-                continue
             payload.append(
                 {
                     "key": row.key,
                     "label": row.label,
                     "attention": row.attention.value,
+                    "is_different": row.is_different,
                     "policies": [
                         {
                             "filename": cell.filename,
                             "status": cell.status.value,
-                            "value": cell.value_text,
+                            "value": (cell.value_text or "")[:650] or None,
                             "pages": sorted({evidence.page for evidence in cell.evidences}),
                         }
                         for cell in row.cells
@@ -105,33 +105,24 @@ class ComparisonService:
                 }
             )
         user = f"""TAREFA: GERAR_RESUMO_COMPARATIVO
-Analise as diferenças abaixo. Retorne apenas JSON no formato:
-{{
-  "executive_summary": "3 a 6 parágrafos curtos e factuais",
-  "row_explanations": {{"chave_do_campo": "explicação curta"}}
-}}
-Inclua explicações somente para chaves recebidas. Não recomende contratação.
+Analise os critérios abaixo e escreva uma síntese executiva curta em Markdown, sem JSON.
+Use exatamente estas seções:
+### Principais diferenças
+Apresente de três a cinco diferenças prioritárias e explique o efeito prático de cada redação.
+### Em comum
+Liste os pontos relevantes tratados pelos dois documentos.
+### Lacunas de informação
+Informe o que não pode ser comparado porque depende da Especificação da Apólice ou não foi localizado.
+
+Não recomende contratação e não declare um vencedor universal.
 
 <comparacao>
 {json.dumps(payload, ensure_ascii=False)}
 </comparacao>
 """
-        response = self.provider.chat(COMPARISON_SYSTEM_PROMPT, user, max_tokens=3500)
-        try:
-            parsed = parse_json_object(response.text)
-        except JSONResponseError:
-            result.executive_summary = response.text.strip() or result.executive_summary
-            result.model_name = response.model
-            return
-        summary = parsed.get("executive_summary")
-        if isinstance(summary, str) and summary.strip():
-            result.executive_summary = summary.strip()
-        explanations = parsed.get("row_explanations", {})
-        if isinstance(explanations, dict):
-            for row in result.rows:
-                explanation = explanations.get(row.key)
-                if isinstance(explanation, str) and explanation.strip():
-                    row.explanation = explanation.strip()
+        response = self.provider.chat(COMPARISON_SYSTEM_PROMPT, user, max_tokens=2600)
+        if response.text.strip():
+            result.executive_summary = response.text.strip()
         result.model_name = response.model
 
 
@@ -176,11 +167,14 @@ def _deterministic_explanation(cells: list[ComparisonCell], different: bool) -> 
 
 def _fallback_summary(rows: list[ComparisonRow]) -> str:
     differences = sum(row.is_different for row in rows)
+    common = sum(
+        not row.is_different and all(cell.status == FieldStatus.ENCONTRADO for cell in row.cells)
+        for row in rows
+    )
     high = sum(row.attention == AttentionLevel.ALTA for row in rows)
     unknown = sum(row.attention == AttentionLevel.INDETERMINADA for row in rows)
     return (
-        f"Foram avaliados {len(rows)} critérios. O sistema identificou {differences} diferenças, "
-        f"das quais {high} receberam atenção alta. {unknown} critérios têm informação ausente ou ambígua "
-        "e exigem conferência humana."
+        f"Foram avaliados {len(rows)} critérios: **{differences} diferenças**, sendo **{high} de atenção "
+        f"alta**, e **{common} pontos em comum**. Em **{unknown} critérios** faltam dados equivalentes "
+        "ou há redação que exige conferência humana."
     )
-

@@ -6,6 +6,11 @@ from html import escape
 from insurminds.domain.models import ComparisonResult, PolicyAnalysis
 
 
+def _shorten(value: str, limit: int) -> str:
+    cleaned = " ".join(value.split())
+    return cleaned if len(cleaned) <= limit else cleaned[: limit - 1].rstrip() + "…"
+
+
 def build_comparison_pdf(comparison: ComparisonResult, analyses: list[PolicyAnalysis]) -> bytes:
     try:
         from reportlab.lib import colors
@@ -58,17 +63,20 @@ def build_comparison_pdf(comparison: ComparisonResult, analyses: list[PolicyAnal
     for row in comparison.rows:
         values = []
         for cell in row.cells:
-            value = cell.value_text or cell.status.value.replace("_", " ")
+            value = _shorten(cell.value_text or cell.status.value.replace("_", " "), 480)
             pages = sorted({evidence.page for evidence in cell.evidences})
             if pages:
-                value += "\n(p. " + ", ".join(str(page) for page in pages) + ")"
+                page_list = ", ".join(str(page) for page in pages[:10])
+                if len(pages) > 10:
+                    page_list += ", …"
+                value += "\n(p. " + page_list + ")"
             values.append(Paragraph(escape(value).replace("\n", "<br/>"), small))
         table_data.append(
             [
                 Paragraph(escape(row.label), small),
                 *values,
                 Paragraph(row.attention.value.title(), small),
-                Paragraph(escape(row.explanation), small),
+                Paragraph(escape(_shorten(row.explanation, 320)), small),
             ]
         )
 
@@ -100,10 +108,11 @@ def build_comparison_pdf(comparison: ComparisonResult, analyses: list[PolicyAnal
             continue
         story.append(Paragraph(escape(row.label), styles["Heading3"]))
         for cell in row.cells:
-            for evidence in cell.evidences:
+            for evidence in cell.evidences[:3]:
                 story.append(
                     Paragraph(
-                        f"<b>{escape(cell.filename)}, p. {evidence.page}:</b> {escape(evidence.excerpt)}",
+                        f"<b>{escape(cell.filename)}, p. {evidence.page}:</b> "
+                        f"{escape(_shorten(evidence.excerpt, 700))}",
                         small,
                     )
                 )
@@ -127,4 +136,3 @@ def build_comparison_pdf(comparison: ComparisonResult, analyses: list[PolicyAnal
 
     document.build(story, onFirstPage=footer, onLaterPages=footer)
     return output.getvalue()
-

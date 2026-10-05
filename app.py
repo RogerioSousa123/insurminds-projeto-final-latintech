@@ -16,7 +16,6 @@ LOGO_DATA_URI = "data:image/png;base64," + base64.b64encode(
 ).decode("ascii")
 
 import pandas as pd
-import plotly.express as px
 import streamlit as st
 
 from insurminds.config import Settings
@@ -328,6 +327,24 @@ def attention_icon(level: AttentionLevel) -> str:
     }[level]
 
 
+def compact_text(value: str | None, limit: int = 520) -> str:
+    if not value:
+        return "Não localizado"
+    cleaned = " ".join(value.split())
+    return cleaned if len(cleaned) <= limit else cleaned[: limit - 1].rstrip() + "…"
+
+
+def looks_like_contract_terms(analysis: PolicyAnalysis) -> bool:
+    filename = analysis.document.filename.casefold()
+    fields = analysis.field_map()
+    explicit_hint = any(term in filename for term in ("condicoes", "condições", "processo-susep", "coredownload"))
+    missing_policy_identity = all(
+        fields[key].status == FieldStatus.NAO_LOCALIZADO
+        for key in ("segurado", "numero_apolice")
+    )
+    return explicit_hint or missing_policy_identity
+
+
 st.markdown(
     f"""
     <section class="im-hero">
@@ -376,10 +393,12 @@ with tab_upload:
         "Processar documentos",
         type="primary",
         disabled=not uploads or orchestrator is None,
-        use_container_width=False,
+        width="content",
     )
     if start and uploads and orchestrator:
         completed = 0
+        failed = 0
+        processed_ids: list[str] = []
         for file_index, upload in enumerate(uploads, start=1):
             status = st.status(f"Processando {upload.name}", expanded=True)
             progress_bar = status.progress(0.0)
@@ -405,14 +424,42 @@ with tab_upload:
                     expanded=False,
                 )
                 completed += 1
+                processed_ids.append(analysis.id)
             except (DocumentProcessingError, LLMConfigurationError, ValueError) as exc:
+                failed += 1
                 status.error(str(exc))
                 status.update(label=f"Falha em {upload.name}", state="error", expanded=True)
             except Exception as exc:
+                failed += 1
                 status.error(f"Erro inesperado: {exc}")
                 status.update(label=f"Falha em {upload.name}", state="error", expanded=True)
         if completed:
-            st.success(f"{completed} documento(s) disponível(is) nas abas de análise e comparação.")
+            available = repository.list_analyses()
+            selected_for_comparison = [item for item in available if item.id in processed_ids]
+            for item in available:
+                if len(selected_for_comparison) >= 2:
+                    break
+                if item.id not in {selected.id for selected in selected_for_comparison}:
+                    selected_for_comparison.append(item)
+            if len(selected_for_comparison) >= 2:
+                comparison_provider = provider
+                if comparison_provider is None:
+                    from insurminds.llm.providers import DemoProvider
+
+                    comparison_provider = DemoProvider()
+                st.session_state.comparison = ComparisonService(comparison_provider).compare(
+                    selected_for_comparison[:2], use_ai_summary=False
+                )
+                st.success(
+                    f"{completed} documento(s) concluído(s). A comparação inicial já está pronta na aba Comparação."
+                )
+            else:
+                st.success(f"{completed} documento concluído. Processe mais um para liberar a comparação.")
+        if failed:
+            st.warning(
+                f"{failed} documento(s) falharam. Apenas documentos concluídos entram na comparação; "
+                "você pode reenviar o arquivo que falhou sem marcar a opção de reprocessar."
+            )
 
 
 analyses = repository.list_analyses()
@@ -438,6 +485,13 @@ with tab_policies:
         col3.metric("Ambíguos", ambiguous_count)
         col4.metric("Tempo", f"{selected.elapsed_seconds:.1f}s")
 
+        if looks_like_contract_terms(selected):
+            st.info(
+                "Este arquivo parece ser um documento de **Condições Contratuais**, e não uma apólice "
+                "emitida. Ele é adequado para comparar cláusulas, coberturas e exclusões, mas normalmente "
+                "não contém segurado, número da apólice, vigência individual, LMG ou franquia preenchidos."
+            )
+
         rows = [
             {
                 "Categoria": field.category,
@@ -449,7 +503,7 @@ with tab_policies:
             }
             for field in selected.fields
         ]
-        st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True, height=560)
+        st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch", height=560)
 
         with st.expander("Evidências e auditoria"):
             evidenced = [field for field in selected.fields if field.evidences]
@@ -483,80 +537,157 @@ with tab_policies:
 
 
 with tab_compare:
-    st.subheader("Comparação estruturada")
+    st.subheader("Comparação lado a lado")
+    st.caption("Veja primeiro o que muda, depois o que existe em comum e quais pontos ainda precisam de conferência.")
     if len(analyses) < 2:
-        st.info("Processe pelo menos duas apólices para habilitar a comparação.")
+        st.warning(
+            f"Há {len(analyses)} documento concluído no banco. A comparação precisa de pelo menos dois; "
+            "um arquivo que falha durante o processamento não é incluído."
+        )
+        if analyses:
+            st.markdown("**Documento disponível:** " + analyses[0].document.filename)
     else:
-        default_ids = [analysis.id for analysis in analyses[:2]]
+        stored_comparison = st.session_state.comparison
+        stored_ids = (
+            [item for item in stored_comparison.policy_ids if item in analysis_by_id]
+            if stored_comparison
+            else []
+        )
+        default_ids = stored_ids if len(stored_ids) >= 2 else [analysis.id for analysis in analyses[:2]]
         selected_ids = st.multiselect(
-            "Apólices",
+            "Documentos que serão comparados",
             options=list(analysis_by_id),
             default=default_ids,
             format_func=lambda item: analysis_label(analysis_by_id[item]),
             max_selections=4,
         )
-        ai_summary = st.checkbox("Gerar interpretação executiva com a IA", value=True)
-        if st.button("Comparar apólices", type="primary", disabled=len(selected_ids) < 2):
-            if provider is None and ai_summary:
-                st.error(resource_error or "Provedor de IA indisponível.")
-            else:
-                if provider is None:
-                    from insurminds.llm.providers import DemoProvider
 
-                    comparison_provider = DemoProvider()
+        if len(selected_ids) < 2:
+            st.info("Selecione pelo menos dois documentos.")
+        else:
+            comparison = st.session_state.comparison
+            if comparison is None or comparison.policy_ids != selected_ids:
+                saved_comparison = repository.find_latest_comparison(selected_ids)
+                if saved_comparison is not None:
+                    comparison = saved_comparison
                 else:
-                    comparison_provider = provider
-                with st.spinner("Comparando critérios e preparando a análise..."):
+                    if provider is None:
+                        from insurminds.llm.providers import DemoProvider
+
+                        comparison_provider = DemoProvider()
+                    else:
+                        comparison_provider = provider
                     comparison = ComparisonService(comparison_provider).compare(
-                        [analysis_by_id[item] for item in selected_ids], use_ai_summary=ai_summary
+                        [analysis_by_id[item] for item in selected_ids], use_ai_summary=False
                     )
-                    repository.save_comparison(comparison)
-                    st.session_state.comparison = comparison
+                st.session_state.comparison = comparison
 
-        comparison = st.session_state.comparison
-        if comparison and all(policy_id in analysis_by_id for policy_id in comparison.policy_ids):
+            action1, action2 = st.columns([1, 2])
+            with action1:
+                enrich = st.button(
+                    "Aprimorar resumo com IA",
+                    type="primary",
+                    disabled=provider is None,
+                    width="stretch",
+                )
+            with action2:
+                st.caption(
+                    "A comparação básica é imediata. Este botão pede à IA uma leitura executiva das diferenças já validadas."
+                )
+            if enrich:
+                try:
+                    with st.spinner("Preparando uma síntese executiva das diferenças..."):
+                        comparison = ComparisonService(provider).compare(
+                            [analysis_by_id[item] for item in selected_ids], use_ai_summary=True
+                        )
+                        repository.save_comparison(comparison)
+                        st.session_state.comparison = comparison
+                except Exception as exc:
+                    st.error(f"Não foi possível aprimorar o resumo: {exc}")
+
             compared = [analysis_by_id[item] for item in comparison.policy_ids]
-            differences = sum(row.is_different for row in comparison.rows)
-            high = sum(row.attention == AttentionLevel.ALTA for row in comparison.rows)
-            unknown = sum(row.attention == AttentionLevel.INDETERMINADA for row in comparison.rows)
-            metric1, metric2, metric3 = st.columns(3)
-            metric1.metric("Diferenças", differences)
-            metric2.metric("Atenção alta", high)
-            metric3.metric("Indeterminadas", unknown)
-            st.markdown("#### Resumo executivo")
-            st.write(comparison.executive_summary)
-
-            attention_rows = [
-                {"Categoria": row.category, "Atenção": attention_icon(row.attention), "Quantidade": 1}
-                for row in comparison.rows
+            if any(looks_like_contract_terms(item) for item in compared):
+                st.info(
+                    "Esta comparação usa **Condições Contratuais públicas**. Ela permite confrontar "
+                    "coberturas, exclusões e prazos, mas valores individualizados dependem da "
+                    "Especificação de cada apólice."
+                )
+            clear_differences = [
+                row for row in comparison.rows
+                if row.is_different and row.attention != AttentionLevel.INDETERMINADA
             ]
-            attention_frame = (
-                pd.DataFrame(attention_rows)
-                .groupby(["Categoria", "Atenção"], as_index=False)["Quantidade"]
-                .sum()
-            )
-            chart = px.bar(
-                attention_frame,
-                x="Categoria",
-                y="Quantidade",
-                color="Atenção",
-                title="Mapa de atenção por categoria",
-                barmode="stack",
-                color_discrete_map={
-                    "🟢 Baixa": "#2E9D68",
-                    "🟡 Média": "#E5AC3D",
-                    "🔴 Alta": "#D95C59",
-                    "⚪ Indeterminada": "#A7B2BA",
-                },
-            )
-            chart.update_layout(
-                legend_title_text="",
-                xaxis_title="",
-                yaxis_title="Critérios",
-                margin=dict(l=20, r=20, t=55, b=90),
-                height=390,
-            )
-            st.plotly_chart(chart, use_container_width=True)
+            pending_rows = [row for row in comparison.rows if row.attention == AttentionLevel.INDETERMINADA]
+            shared_rows = [
+                row for row in comparison.rows
+                if all(cell.status == FieldStatus.ENCONTRADO for cell in row.cells)
+            ]
+            exact_common = [row for row in shared_rows if not row.is_different]
+
+            metric1, metric2, metric3, metric4 = st.columns(4)
+            metric1.metric("Documentos", len(compared))
+            metric2.metric("Diferenças confirmadas", len(clear_differences))
+            metric3.metric("Critérios nos dois", len(shared_rows))
+            metric4.metric("Exigem conferência", len(pending_rows))
+
+            st.markdown("### Leitura executiva")
+            st.markdown(comparison.executive_summary)
+
+            st.markdown("### O que difere")
+            if not clear_differences:
+                st.success("Nenhuma diferença confirmada foi encontrada nos critérios com dados equivalentes.")
+            else:
+                attention_rank = {
+                    AttentionLevel.ALTA: 0,
+                    AttentionLevel.MEDIA: 1,
+                    AttentionLevel.BAIXA: 2,
+                }
+                ordered_differences = sorted(
+                    clear_differences,
+                    key=lambda row: (attention_rank.get(row.attention, 9), row.category, row.label),
+                )
+                for row in ordered_differences:
+                    with st.container(border=True):
+                        st.markdown(f"**{row.label}** · {attention_icon(row.attention)}")
+                        st.caption(row.explanation)
+                        columns = st.columns(len(row.cells))
+                        for column, cell in zip(columns, row.cells):
+                            with column:
+                                st.markdown(f"**{cell.filename}**")
+                                st.write(compact_text(cell.value_text))
+                                pages = sorted({evidence.page for evidence in cell.evidences})
+                                if pages:
+                                    st.caption("Evidências: p. " + ", ".join(map(str, pages[:8])))
+
+            st.markdown("### O que existe em comum")
+            if shared_rows:
+                st.write(
+                    "Os dois documentos tratam dos seguintes critérios: "
+                    + ", ".join(row.label for row in shared_rows)
+                    + "."
+                )
+                if exact_common:
+                    st.caption(
+                        "Com redação/valor equivalente: "
+                        + ", ".join(row.label for row in exact_common)
+                        + "."
+                    )
+                else:
+                    st.caption("Os temas existem nos dois documentos, mas a redação extraída não é idêntica.")
+            else:
+                st.info("Ainda não há critérios encontrados de forma equivalente nos dois documentos.")
+
+            st.markdown("### O que ainda precisa ser conferido")
+            if pending_rows:
+                with st.expander(f"Ver {len(pending_rows)} critério(s) com informação ausente ou ambígua"):
+                    for row in pending_rows:
+                        missing = [
+                            cell.filename
+                            for cell in row.cells
+                            if cell.status in {FieldStatus.NAO_LOCALIZADO, FieldStatus.AMBIGUO}
+                        ]
+                        st.markdown(f"- **{row.label}:** conferir em {', '.join(missing)}")
+            else:
+                st.success("Todos os critérios comparados possuem informação estruturada.")
 
             matrix_rows = []
             for row in comparison.rows:
@@ -571,24 +702,31 @@ with tab_compare:
                 record["Análise"] = row.explanation
                 matrix_rows.append(record)
             matrix = pd.DataFrame(matrix_rows)
-            st.dataframe(matrix, hide_index=True, use_container_width=True, height=650)
 
-            with st.expander("Conferir evidências da comparação"):
-                rows_with_evidence = [row for row in comparison.rows if any(cell.evidences for cell in row.cells)]
+            with st.expander("Matriz completa e evidências"):
+                only_differences = st.checkbox("Mostrar somente diferenças", value=True)
+                visible_matrix = matrix[
+                    matrix["Critério"].isin(row.label for row in comparison.rows if row.is_different)
+                ] if only_differences else matrix
+                st.dataframe(visible_matrix, hide_index=True, width="stretch", height=560)
+                rows_with_evidence = [
+                    row for row in comparison.rows
+                    if any(cell.evidences for cell in row.cells) and (row.is_different or not only_differences)
+                ]
                 for row in rows_with_evidence:
                     st.markdown(f"**{row.label}** · {attention_icon(row.attention)}")
                     for cell in row.cells:
-                        for evidence in cell.evidences:
+                        for evidence in cell.evidences[:3]:
                             st.markdown(f"> {cell.filename}, p. {evidence.page}: {evidence.excerpt}")
 
             json_data = comparison.model_dump_json(indent=2)
             csv_data = matrix.to_csv(index=False).encode("utf-8-sig")
             download1, download2, download3 = st.columns(3)
             download1.download_button(
-                "Baixar JSON", json_data, "comparacao_insurminds.json", "application/json", use_container_width=True
+                "Baixar JSON", json_data, "comparacao_insurminds.json", "application/json", width="stretch"
             )
             download2.download_button(
-                "Baixar CSV", csv_data, "comparacao_insurminds.csv", "text/csv", use_container_width=True
+                "Baixar CSV", csv_data, "comparacao_insurminds.csv", "text/csv", width="stretch"
             )
             try:
                 pdf_data = build_comparison_pdf(comparison, compared)
@@ -597,7 +735,7 @@ with tab_compare:
                     pdf_data,
                     "InsurMinds_Relatorio_Comparativo.pdf",
                     "application/pdf",
-                    use_container_width=True,
+                    width="stretch",
                 )
             except RuntimeError as exc:
                 download3.warning(str(exc))
@@ -608,6 +746,10 @@ with tab_compare:
 
 with tab_chat:
     st.subheader("Copiloto com evidências")
+    st.caption(
+        "Pergunte, por exemplo: “Quais são as três diferenças mais relevantes?”, “O que existe em comum?” "
+        "ou “Como cada documento trata custos de defesa?”."
+    )
     if not analyses:
         st.info("Processe documentos antes de conversar com o copiloto.")
     else:

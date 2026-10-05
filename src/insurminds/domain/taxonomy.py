@@ -45,9 +45,25 @@ FIELD_DEFINITIONS: tuple[FieldDefinition, ...] = (
 FIELD_BY_KEY = {item.key: item for item in FIELD_DEFINITIONS}
 
 
+# Campos que devem representar um único dado da especificação da apólice. Os
+# demais campos descrevem cláusulas e podem reunir condições, exclusões e
+# extensões complementares sem que isso, por si só, signifique ambiguidade.
+SCALAR_FIELD_KEYS = frozenset(
+    {
+        "seguradora",
+        "segurado",
+        "numero_apolice",
+        "vigencia_inicio",
+        "vigencia_fim",
+        "limite_maximo_garantia",
+        "franquia_geral",
+        "data_retroatividade",
+    }
+)
+
+
 def taxonomy_for_prompt() -> str:
     return "\n".join(
         f"- {item.key}: {item.label}. {item.description} Formato esperado: {item.value_hint}."
         for item in FIELD_DEFINITIONS
     )
-
