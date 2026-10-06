@@ -10,6 +10,13 @@ try {
     Get-ChildItem -LiteralPath $projectRoot -Force | Where-Object { $_.Name -notin $excluded } | ForEach-Object {
         Copy-Item -LiteralPath $_.FullName -Destination $stageDir -Recurse -Force
     }
+    Get-ChildItem -LiteralPath $stageDir -Recurse -Force -File | Where-Object { $_.Name.StartsWith('~$') } | ForEach-Object {
+        $lockPath = [System.IO.Path]::GetFullPath($_.FullName)
+        $resolvedStage = [System.IO.Path]::GetFullPath($stageDir)
+        if ($lockPath.StartsWith($resolvedStage + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)) {
+            Remove-Item -LiteralPath $lockPath -Force
+        }
+    }
     $stagedPreviousZip = Join-Path $stageDir "Projeto_Final_Artefatos\InsurMinds_Projeto_Final_Codigo.zip"
     if (Test-Path -LiteralPath $stagedPreviousZip) {
         Remove-Item -LiteralPath $stagedPreviousZip -Force
