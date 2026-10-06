@@ -172,13 +172,12 @@ A suíte possui 14 testes automatizados. Ela cobre parsing e recuperação de re
 ├── tests/               # testes automatizados
 ├── examples/            # apólices sintéticas, sem dados reais
 ├── scripts/             # geração dos artefatos acadêmicos
-├── docs/                # relatório, arquitetura, testes e roteiro
+├── docs/                # relatório, arquitetura e testes
 └── Projeto_Final_Artefatos/
     ├── InsurMinds_Projeto_Final.pptx
     ├── InsurMinds_Relatorio_Tecnico.pdf
     ├── InsurMinds_Projeto_Final_Codigo.zip
-    ├── InsurMinds_Projeto_Final.mp4      # incluído após a gravação
-    └── ROTEIRO_VIDEO.md
+    └── InsurMinds_Projeto_Final.mp4
 ```
 
 O vídeo final deve ser gravado como `Projeto_Final_Artefatos/InsurMinds_Projeto_Final.mp4` após a validação com a chave de IA e os documentos escolhidos pelo grupo.
@@ -221,7 +220,6 @@ Para o MVP acadêmico, documentos enviados ao provedor de IA devem ser públicos
 - [Arquitetura detalhada](docs/ARQUITETURA.md)
 - [Dicionário de dados](docs/DICIONARIO_DADOS.md)
 - [Plano de testes](docs/PLANO_TESTES.md)
-- [Roteiro do vídeo de cinco minutos](docs/ROTEIRO_VIDEO.md)
 
 ## Licença
 

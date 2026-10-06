@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import re
-import shutil
 from html import escape
 from pathlib import Path
 
@@ -313,7 +312,6 @@ def main():
     ARTIFACTS.mkdir(parents=True, exist_ok=True)
     report = generate_report_pdf()
     deck = generate_pitch_deck()
-    shutil.copyfile(ROOT / "docs" / "ROTEIRO_VIDEO.md", ARTIFACTS / "ROTEIRO_VIDEO.md")
     print(f"Relatório: {report}")
     print(f"Pitch deck: {deck}")
 
