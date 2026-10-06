@@ -31,15 +31,15 @@ Leia somente os parágrafos marcados como **Falar**. As instruções de tela nã
 
 “Essas apólices são longas e usam linguagem jurídica. Limites, franquias, coberturas, exclusões e prazos podem estar espalhados por várias páginas. A comparação manual exige tempo e pode deixar passar uma diferença importante. Além disso, uma conclusão sem página e sem trecho de origem é difícil de conferir.”
 
-## 0:55–1:25 — O que a solução faz
+## 0:55–1:35 — As seis etapas da proposta de valor
 
-**Mostrar:** slide da proposta e depois abrir a aplicação.
+**Mostrar:** slide **Da leitura dispersa à comparação verificável**. Aponte cada etapa conforme ela for citada e depois abra a aplicação.
 
 **Falar:**
 
-“O InsurMinds recebe PDF ou imagem e transforma o conteúdo em dados comparáveis. Em páginas escaneadas usamos OCR, a tecnologia que converte a imagem das palavras em texto pesquisável. Depois usamos IA generativa, um modelo que interpreta linguagem e organiza a resposta. A extração segue uma taxonomia de vinte e seis critérios; taxonomia é uma lista padronizada do que queremos localizar em todas as apólices.”
+“Nossa proposta possui seis etapas. Primeiro, Enviar: recebemos o PDF ou a imagem. Segundo, Extrair: lemos o conteúdo e usamos OCR nas páginas escaneadas; OCR transforma imagem em texto. Terceiro, Estruturar: a IA generativa interpreta a linguagem e organiza tudo nos vinte e seis critérios da nossa taxonomia, a lista padronizada do que procuramos. Quarto, Validar: conferimos página e trecho. Quinto, Comparar: colocamos os campos lado a lado e destacamos diferenças. Sexto, Consultar: o Copiloto responde usando as evidências. Assim, transformamos documentos em dados comparáveis e verificáveis.”
 
-## 1:25–2:15 — Os seis agentes do projeto
+## 1:35–2:25 — Os seis agentes do projeto
 
 **Mostrar:** slide **Agentes pequenos, especializados e testáveis**. Aponte cada agente conforme ele for citado.
 
@@ -47,7 +47,7 @@ Leia somente os parágrafos marcados como **Falar**. As instruções de tela nã
 
 “Criamos seis agentes especializados. Um agente é um módulo com uma responsabilidade específica, não um robô que decide sozinho. O Agente Leitor valida o arquivo e extrai o texto, usando OCR em páginas que são imagens. O Agente Extrator envia o texto à IA e procura os vinte e seis critérios. O Agente Auditor verifica se a página e o trecho comprovam cada informação. O Agente Comparador confronta as apólices e aponta itens iguais, diferentes ou pendentes. O Agente Relator prepara as exportações. O Agente Copiloto recupera evidências e responde perguntas com citações. Todos trabalham em sequência. O Pydantic valida o formato dos dados, e o SQLite os guarda em um banco local.”
 
-## 2:15–2:40 — Envio e processamento
+## 2:25–2:50 — Envio e processamento
 
 **Mostrar:** aba **Documentos**. Envie as duas apólices sintéticas e inicie o processamento.
 
@@ -55,15 +55,15 @@ Leia somente os parágrafos marcados como **Falar**. As instruções de tela nã
 
 “Na área Documentos enviamos as apólices. Nesta demonstração usamos arquivos sintéticos, sem informações reais e sem validade contratual. O sistema calcula um hash, que funciona como uma impressão digital do arquivo. Se o mesmo documento já foi analisado, o cache reutiliza o resultado anterior, reduzindo tempo e novas chamadas ao modelo de IA.”
 
-## 2:40–3:05 — Análise individual
+## 2:50–3:10 — Análise individual
 
 **Mostrar:** aba **Apólices**. Selecione a Apólice A e abra a evidência de um limite.
 
 **Falar:**
 
-“Na área Apólices, as cláusulas viram dados estruturados. Isso significa que informações escritas de formas diferentes passam a ocupar os mesmos campos. Cada resultado mostra valor, página, trecho e confiança. O sistema separa informação encontrada, não localizada, ambígua e não aplicável. Portanto, não localizar uma cláusula não significa afirmar que a cobertura não existe.”
+“Na área Apólices, cada resultado mostra valor, página, trecho e confiança. O sistema separa informação encontrada, não localizada, ambígua e não aplicável. Portanto, não localizar uma cláusula não significa afirmar que a cobertura não existe.”
 
-## 3:05–3:40 — Comparação
+## 3:10–3:45 — Comparação
 
 **Mostrar:** aba **Comparação**, com as duas apólices selecionadas. Destaque limite, franquia, multas e jurisdição.
 
@@ -71,7 +71,7 @@ Leia somente os parágrafos marcados como **Falar**. As instruções de tela nã
 
 “A comparação objetiva é determinística, ou seja, os mesmos dados sempre produzem o mesmo resultado. A Apólice A tem limite de dez milhões de reais e franquia de cem mil. A Apólice B tem limite de quinze milhões e franquia de duzentos e cinquenta mil. Também encontramos diferenças em multas, investigações, retroatividade, território e jurisdição. O semáforo apenas indica pontos de atenção para revisão humana; ele não recomenda qual apólice contratar.”
 
-## 3:40–4:10 — Copiloto e exportação
+## 3:45–4:15 — Copiloto e exportação
 
 **Mostrar:** aba **Copiloto**, faça a pergunta testada e depois mostre os botões de exportação.
 
@@ -79,7 +79,7 @@ Leia somente os parágrafos marcados como **Falar**. As instruções de tela nã
 
 “O Copiloto primeiro recupera os trechos mais relacionados à pergunta e só então pede à IA que redija a resposta. Por isso, ele consegue citar documento e página. O resultado também pode ser exportado em PDF, CSV e JSON. O CSV pode ser aberto como planilha, enquanto o JSON preserva a estrutura completa para uso em outros sistemas.”
 
-## 4:10–4:35 — Confiabilidade e limites
+## 4:15–4:40 — Confiabilidade e limites
 
 **Mostrar:** evidências ou slide de controles.
 
@@ -87,7 +87,7 @@ Leia somente os parágrafos marcados como **Falar**. As instruções de tela nã
 
 “A confiabilidade não depende apenas do prompt, que é o conjunto de instruções enviado à IA. O sistema confere chaves, páginas e trechos antes de salvar. JSON é o formato de texto usado na resposta estruturada; se ele vier com erro, a aplicação tenta recuperá-lo sem perder os lotes válidos. Mesmo com esses controles, OCR e interpretação jurídica podem falhar. Por isso, a análise é assistiva e precisa de validação profissional.”
 
-## 4:35–4:50 — Encerramento
+## 4:40–4:55 — Encerramento
 
 **Mostrar:** slide final.
 
