@@ -21,7 +21,7 @@ Leia somente os parágrafos marcados como **Falar**. As instruções de tela nã
 
 **Falar:**
 
-“Olá. Nós somos o grupo LatinTech e este é o InsurMinds, projeto final do módulo avançado do I2A2. Criamos uma plataforma inteligente para apoiar a leitura e a comparação de apólices de seguro D&O. D&O é o seguro que protege administradores e executivos diante de determinadas reclamações relacionadas às suas decisões de gestão.”
+“Olá. Somos o grupo LatinTech e este é o InsurMinds, nosso projeto final do I2A2. Criamos uma plataforma para apoiar a leitura e a comparação de apólices D&O. D&O é o seguro que protege administradores e executivos diante de reclamações relacionadas às suas decisões de gestão.”
 
 ## 0:25–0:55 — Problema
 
@@ -31,31 +31,31 @@ Leia somente os parágrafos marcados como **Falar**. As instruções de tela nã
 
 “Essas apólices são longas e usam linguagem jurídica. Limites, franquias, coberturas, exclusões e prazos podem estar espalhados por várias páginas. A comparação manual exige tempo e pode deixar passar uma diferença importante. Além disso, uma conclusão sem página e sem trecho de origem é difícil de conferir.”
 
-## 0:55–1:30 — O que a solução faz
+## 0:55–1:25 — O que a solução faz
 
 **Mostrar:** slide da proposta e depois abrir a aplicação.
 
 **Falar:**
 
-“O InsurMinds recebe documentos em PDF ou imagem e transforma o conteúdo em dados comparáveis. Quando a página é escaneada, usamos OCR, que é a tecnologia que converte a imagem das palavras em texto pesquisável. Depois usamos IA generativa, que é um modelo capaz de interpretar linguagem e produzir uma resposta organizada. A extração segue uma taxonomia de vinte e seis critérios; taxonomia é apenas uma lista padronizada dos itens que queremos localizar em todas as apólices.”
+“O InsurMinds recebe PDF ou imagem e transforma o conteúdo em dados comparáveis. Em páginas escaneadas usamos OCR, a tecnologia que converte a imagem das palavras em texto pesquisável. Depois usamos IA generativa, um modelo que interpreta linguagem e organiza a resposta. A extração segue uma taxonomia de vinte e seis critérios; taxonomia é uma lista padronizada do que queremos localizar em todas as apólices.”
 
-## 1:30–2:05 — Arquitetura sem complicação
+## 1:25–2:15 — Os seis agentes do projeto
 
-**Mostrar:** aba **Como funciona** ou slide de arquitetura.
+**Mostrar:** slide **Agentes pequenos, especializados e testáveis**. Aponte cada agente conforme ele for citado.
 
 **Falar:**
 
-“Dividimos o processo em agentes especializados. Aqui, agente significa um módulo do sistema com uma tarefa específica, e não um robô que decide tudo sozinho. O PyMuPDF lê o texto existente no PDF e mantém a página de origem. A API funciona como uma ponte de comunicação entre a aplicação e o modelo de IA. O Pydantic confere se a resposta está no formato esperado. Por fim, o SQLite salva os resultados em um banco de dados leve, armazenado em um único arquivo.”
+“Criamos seis agentes especializados. Um agente é um módulo com uma responsabilidade específica, não um robô que decide sozinho. O Agente Leitor valida o arquivo e extrai o texto, usando OCR em páginas que são imagens. O Agente Extrator envia o texto à IA e procura os vinte e seis critérios. O Agente Auditor verifica se a página e o trecho comprovam cada informação. O Agente Comparador confronta as apólices e aponta itens iguais, diferentes ou pendentes. O Agente Relator prepara as exportações. O Agente Copiloto recupera evidências e responde perguntas com citações. Todos trabalham em sequência. O Pydantic valida o formato dos dados, e o SQLite os guarda em um banco local.”
 
-## 2:05–2:35 — Envio e processamento
+## 2:15–2:40 — Envio e processamento
 
 **Mostrar:** aba **Documentos**. Envie as duas apólices sintéticas e inicie o processamento.
 
 **Falar:**
 
-“Na área Documentos enviamos as apólices. Nesta demonstração usamos arquivos sintéticos, sem informações reais e sem validade contratual. O sistema calcula um hash, que funciona como uma impressão digital do arquivo. Se o mesmo documento já foi analisado, o cache reutiliza o resultado anterior, reduzindo tempo e consumo da API.”
+“Na área Documentos enviamos as apólices. Nesta demonstração usamos arquivos sintéticos, sem informações reais e sem validade contratual. O sistema calcula um hash, que funciona como uma impressão digital do arquivo. Se o mesmo documento já foi analisado, o cache reutiliza o resultado anterior, reduzindo tempo e novas chamadas ao modelo de IA.”
 
-## 2:35–3:00 — Análise individual
+## 2:40–3:05 — Análise individual
 
 **Mostrar:** aba **Apólices**. Selecione a Apólice A e abra a evidência de um limite.
 
@@ -63,7 +63,7 @@ Leia somente os parágrafos marcados como **Falar**. As instruções de tela nã
 
 “Na área Apólices, as cláusulas viram dados estruturados. Isso significa que informações escritas de formas diferentes passam a ocupar os mesmos campos. Cada resultado mostra valor, página, trecho e confiança. O sistema separa informação encontrada, não localizada, ambígua e não aplicável. Portanto, não localizar uma cláusula não significa afirmar que a cobertura não existe.”
 
-## 3:00–3:40 — Comparação
+## 3:05–3:40 — Comparação
 
 **Mostrar:** aba **Comparação**, com as duas apólices selecionadas. Destaque limite, franquia, multas e jurisdição.
 
